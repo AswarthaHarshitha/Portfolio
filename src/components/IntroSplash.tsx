@@ -142,15 +142,21 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
   }, [step, email]);
 
   // the Bitmoji "speaks" the summary aloud via the browser's built-in speech
-  // synthesis, using the most natural-sounding voice available on this device.
+  // synthesis, fully automatically — no button, plays every time this step
+  // is reached (including every refresh), using the most female-leaning
+  // voice available on this device.
   useEffect(() => {
     if (step !== "speaking") return;
     let fallback: ReturnType<typeof setTimeout> | undefined;
+    let poll: ReturnType<typeof setTimeout> | undefined;
+    let keepAlive: ReturnType<typeof setInterval> | undefined;
     let cancelled = false;
-    let spoken = false;
+    let started = false;
 
     const finish = () => {
       if (fallback) clearTimeout(fallback);
+      if (poll) clearTimeout(poll);
+      if (keepAlive) clearInterval(keepAlive);
       setSpeaking(false);
       setStep("done");
     };
@@ -162,27 +168,25 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
       };
     }
 
-    // Chrome silently stops long utterances (~15s+) unless nudged — a periodic
-    // pause/resume keeps it alive for the full ~1-minute narration.
-    let keepAlive: ReturnType<typeof setInterval> | undefined;
-
-    const speakNow = () => {
-      if (cancelled || spoken) return;
-      spoken = true;
+    const doSpeak = () => {
+      if (cancelled || started) return;
+      started = true;
       const utter = new SpeechSynthesisUtterance(summary);
       const voice = pickVoice();
       if (voice) utter.voice = voice;
       utter.lang = voice?.lang ?? "en-IN";
-      // Nudged up for a younger, more feminine read — browsers don't expose
-      // an actual age/gender control, so pitch/rate is the only lever here.
-      utter.pitch = 1.25;
-      utter.rate = 1.0;
+      // Kept close to natural — an aggressive pitch shift is what made
+      // earlier attempts sound robotic. Voice *selection* above does the
+      // heavy lifting for "young and female"; this just nudges it.
+      utter.pitch = 1.1;
+      utter.rate = 0.98;
       utter.onstart = () => setSpeaking(true);
       utter.onend = finish;
       utter.onerror = finish;
-      window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
 
+      // Chrome silently stops long utterances (~15s+) unless nudged — a periodic
+      // pause/resume keeps it alive for the full ~1-minute narration.
       keepAlive = setInterval(() => {
         if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
           window.speechSynthesis.pause();
@@ -191,18 +195,31 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
       }, 12000);
     };
 
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = speakNow;
-      setTimeout(speakNow, 300); // some browsers never fire voiceschanged
-    } else {
-      speakNow();
-    }
+    // Chrome/Edge populate getVoices() asynchronously and a single fixed-delay
+    // retry isn't reliable across devices — poll every 150ms (up to ~2.4s)
+    // until a voice list actually shows up, then speak immediately. If none
+    // ever arrives, speak anyway with the browser's own default rather than
+    // staying silent — some voice is better than none.
+    window.speechSynthesis.cancel();
+    let attempts = 0;
+    const tryStart = () => {
+      if (cancelled || started) return;
+      attempts++;
+      if (window.speechSynthesis.getVoices().length > 0 || attempts >= 16) {
+        doSpeak();
+      } else {
+        poll = setTimeout(tryStart, 150);
+      }
+    };
+    window.speechSynthesis.onvoiceschanged = tryStart;
+    tryStart();
 
     // Safety net well past the ~70s narration, in case onend never fires.
     fallback = setTimeout(finish, 95000);
     return () => {
       cancelled = true;
       if (fallback) clearTimeout(fallback);
+      if (poll) clearTimeout(poll);
       if (keepAlive) clearInterval(keepAlive);
       window.speechSynthesis.cancel();
       window.speechSynthesis.onvoiceschanged = null;
