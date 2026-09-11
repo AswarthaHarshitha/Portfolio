@@ -3,10 +3,12 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
-  // GitHub Pages serves project sites at /<repo-name>/, not the domain root —
-  // production assets need this prefix or they 404 once deployed there. Dev
-  // stays at root so `npm run dev` keeps working at plain localhost.
-  base: command === 'build' ? '/Portfolio/' : '/',
+export default defineConfig(() => ({
+  // GitHub Pages serves this repo at /Portfolio/, not the domain root, so
+  // that deploy needs GH_PAGES=true set for the build to prefix assets
+  // correctly. Every other target (Vercel, local dev) serves from its own
+  // root, so the default stays '/' — do NOT hardcode '/Portfolio/' as the
+  // default or it silently breaks every other deploy target's asset paths.
+  base: process.env.GH_PAGES === 'true' ? '/Portfolio/' : '/',
   plugins: [react(), tailwindcss()],
 }))
