@@ -1,32 +1,46 @@
-# Aswartha Harshitha — Portfolio
+# Sugreevu Aswartha Harshitha — Portfolio
 
-A cinematic, physics-driven portfolio built with React, TypeScript, Tailwind CSS, and a react-three-fiber + Rapier physics hero scene.
+My personal portfolio. I built it because I wanted something that actually shows how I think about building software instead of another templated one-pager — so the hero is a real physics simulation instead of a static image, and every project on the page is pulled from an actual GitHub repo with a description written from that repo's real code, not a one-line guess.
+
+**Live:** [harshitha-portfolio-inky.vercel.app](https://harshitha-portfolio-inky.vercel.app) · mirrored on [GitHub Pages](https://aswarthaharshitha.github.io/Portfolio/)
+
+## What's on it
+
+- **Hero** — a pile of tech chips (React, Python, SAP Fiori, TensorFlow, and the rest of my stack) dropped into a `react-three-fiber` + Rapier physics scene. They collide, settle, and react to your cursor like real objects — it's not a CSS animation pretending to be one.
+- **Intro splash** — a short sequence that scrambles into my name, types out my email character by character, and narrates a short summary of who I am out loud using the browser's built-in speech synthesis. It waits for your first tap or click before it speaks, since most browsers block autoplaying audio otherwise.
+- **About / Skills / Journey** — the real timeline: SRM University AP, both internships, the certifications, and the stack I've actually shipped with rather than just read about.
+- **Projects** — every card here is a real repo. Descriptions were written from each project's own README and source, not invented, and each one links straight to the code (and a live demo where one exists).
+- **Publications & Certifications** — my IEEE/SN papers and my SAP, AWS, Oracle, and NPTEL certifications, each linking to a real verification page or the certificate itself.
+- **Contact** — a working message form plus direct email, phone, GitHub, and LinkedIn.
 
 ## Stack
 
-- **Vite + React + TypeScript**
-- **Tailwind CSS v4** (via `@tailwindcss/vite`)
-- **three.js / @react-three/fiber / @react-three/drei / @react-three/rapier** — the interactive hero scene (draggable, physics-based tech chips)
-- **Framer Motion**, **lucide-react**
+- Vite + React 19 + TypeScript
+- Tailwind CSS v4
+- `three.js` / `@react-three/fiber` / `@react-three/drei` / `@react-three/rapier` for the hero scene
+- Framer Motion for everything else
 
-## Getting started
+## Running it locally
 
 ```bash
 npm install
-npm run dev      # start the dev server
-npm run build    # production build to dist/
-npm run preview  # preview the production build
+npm run dev       # start the dev server
+npm run build     # tsc -b && vite build
+npm run preview   # preview the production build
 ```
 
-## Content that still needs your input
+## Where the content lives
 
-Everything project-related is pulled from real GitHub repos (`src/data/projects.ts`). Personal details are placeholders — edit `src/data/profile.ts`:
+Everything text-based is data, not hardcoded into components, so updating the site means editing a file, not hunting through JSX:
 
-- `title` — confirm your preferred headline title
-- `bio` — replace with your own words
-- `links.email` — add a real email (the Contact section hides the Email button until this is set)
-- `links.resumeUrl` — add a resume PDF if you want a download button later
+| File | Content |
+|---|---|
+| `src/data/profile.ts` | name, title, bio, contact links |
+| `src/data/projects.ts` | every project card |
+| `src/data/experience.ts`, `education.ts` | the timeline |
+| `src/data/certifications.ts`, `publications.ts` | credentials |
+| `src/data/skills.ts` | the tech stack grid |
 
-## Project data
+## Deployment
 
-`src/data/projects.ts` holds every project shown on the site — title, description, tech stack, links, and role tags (used by the filter chips on the Projects section). Descriptions were written from each repo's actual README/source, not guessed — update this file directly as your repos change.
+Production runs on Vercel, mirrored to GitHub Pages via the `gh-pages` branch. `GH_PAGES=true` gates the `/Portfolio/` base path in `vite.config.ts` so it only applies to the Pages build, not Vercel or local dev.
