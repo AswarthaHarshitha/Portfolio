@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Code2, Globe, Mail, User } from "lucide-react";
 import { profile } from "../data/profile";
@@ -68,9 +68,35 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
   const [step, setStep] = useState<Step>("intro");
   const [emailChars, setEmailChars] = useState(0);
   const [speaking, setSpeaking] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
   const [hasAvatarImage, setHasAvatarImage] = useState(true);
   const [exiting, setExiting] = useState(false);
   const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Most browsers (iOS Safari strictly, Chrome under its autoplay-with-sound
+  // policy) refuse to produce any audio from script — speech synthesis
+  // included — until the visitor has made a real gesture on the page. No
+  // amount of voice-list polling works around that, so the very first speak()
+  // call is deferred to the first real tap/click/keypress if none has
+  // happened yet by the time we're ready to narrate.
+  const hasInteractedRef = useRef(false);
+  const pendingSpeakRef = useRef<null | (() => void)>(null);
+
+  useEffect(() => {
+    const onFirstGesture = () => {
+      if (hasInteractedRef.current) return;
+      hasInteractedRef.current = true;
+      const run = pendingSpeakRef.current;
+      pendingSpeakRef.current = null;
+      if (run) run();
+    };
+    document.addEventListener("pointerdown", onFirstGesture, { capture: true });
+    document.addEventListener("keydown", onFirstGesture, { capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", onFirstGesture, { capture: true });
+      document.removeEventListener("keydown", onFirstGesture, { capture: true });
+    };
+  }, []);
 
   const email = profile.links.email;
   // ~180 words — around a minute at the utterance's speaking rate. Opens with
@@ -147,30 +173,35 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
   // voice available on this device.
   useEffect(() => {
     if (step !== "speaking") return;
-    let fallback: ReturnType<typeof setTimeout> | undefined;
+    let noGestureTimer: ReturnType<typeof setTimeout> | undefined;
+    let longFallback: ReturnType<typeof setTimeout> | undefined;
     let poll: ReturnType<typeof setTimeout> | undefined;
     let keepAlive: ReturnType<typeof setInterval> | undefined;
     let cancelled = false;
     let started = false;
 
     const finish = () => {
-      if (fallback) clearTimeout(fallback);
+      if (noGestureTimer) clearTimeout(noGestureTimer);
+      if (longFallback) clearTimeout(longFallback);
       if (poll) clearTimeout(poll);
       if (keepAlive) clearInterval(keepAlive);
       setSpeaking(false);
+      setNeedsTap(false);
       setStep("done");
     };
 
     if (!("speechSynthesis" in window)) {
-      fallback = setTimeout(finish, 3400);
+      noGestureTimer = setTimeout(finish, 3400);
       return () => {
-        if (fallback) clearTimeout(fallback);
+        if (noGestureTimer) clearTimeout(noGestureTimer);
       };
     }
 
     const doSpeak = () => {
       if (cancelled || started) return;
       started = true;
+      setNeedsTap(false);
+      if (noGestureTimer) clearTimeout(noGestureTimer);
       const utter = new SpeechSynthesisUtterance(summary);
       const voice = pickVoice();
       if (voice) utter.voice = voice;
@@ -193,12 +224,34 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
           window.speechSynthesis.resume();
         }
       }, 12000);
+
+      // Safety net well past the ~70s narration, in case onend never fires.
+      longFallback = setTimeout(finish, 95000);
+    };
+
+    // The voice list being ready is necessary but not sufficient — most
+    // browsers additionally withhold audio playback until a genuine user
+    // gesture has occurred anywhere on the page. If that hasn't happened
+    // yet, queue the speak call for it instead of firing (and silently
+    // failing) immediately, and surface a hint so it's discoverable.
+    const attemptSpeak = () => {
+      if (cancelled || started) return;
+      if (hasInteractedRef.current) {
+        doSpeak();
+        return;
+      }
+      setNeedsTap(true);
+      pendingSpeakRef.current = doSpeak;
+      noGestureTimer = setTimeout(() => {
+        pendingSpeakRef.current = null;
+        finish();
+      }, 6000);
     };
 
     // Chrome/Edge populate getVoices() asynchronously and a single fixed-delay
     // retry isn't reliable across devices — poll every 150ms (up to ~2.4s)
-    // until a voice list actually shows up, then speak immediately. If none
-    // ever arrives, speak anyway with the browser's own default rather than
+    // until a voice list actually shows up, then attempt to speak. If none
+    // ever arrives, attempt anyway with the browser's own default rather than
     // staying silent — some voice is better than none.
     window.speechSynthesis.cancel();
     let attempts = 0;
@@ -206,7 +259,7 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
       if (cancelled || started) return;
       attempts++;
       if (window.speechSynthesis.getVoices().length > 0 || attempts >= 16) {
-        doSpeak();
+        attemptSpeak();
       } else {
         poll = setTimeout(tryStart, 150);
       }
@@ -214,11 +267,11 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
     window.speechSynthesis.onvoiceschanged = tryStart;
     tryStart();
 
-    // Safety net well past the ~70s narration, in case onend never fires.
-    fallback = setTimeout(finish, 95000);
     return () => {
       cancelled = true;
-      if (fallback) clearTimeout(fallback);
+      if (pendingSpeakRef.current === doSpeak) pendingSpeakRef.current = null;
+      if (noGestureTimer) clearTimeout(noGestureTimer);
+      if (longFallback) clearTimeout(longFallback);
       if (poll) clearTimeout(poll);
       if (keepAlive) clearInterval(keepAlive);
       window.speechSynthesis.cancel();
@@ -360,7 +413,9 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
 
                   <div className="relative rounded-2xl rounded-bl-none border border-border-strong bg-surface px-4 py-3 max-w-xs text-left">
                     <p className="text-xs sm:text-sm text-muted leading-relaxed">
-                      Hi, I'm {profile.name.split(" ")[0]} — {profile.title}.
+                      {needsTap
+                        ? "Tap anywhere to hear it →"
+                        : `Hi, I'm ${profile.name.split(" ")[0]} — ${profile.title}.`}
                     </p>
                   </div>
                 </motion.div>
