@@ -69,6 +69,53 @@ const GH = "https://github.com/AswarthaHarshitha";
 
 export const projects: Project[] = [
   {
+    id: "careerpilot",
+    emoji: "🧭",
+    title: "CareerPilot",
+    repo: "careerpilot",
+    tagline: "Evidence-grounded resume tailoring & auto-apply workspace",
+    description:
+      "A job-application workspace that reads any job posting (Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Oracle Recruiting Cloud, or JSON-LD) and extracts requirements deterministically. Verified GitHub evidence — each skill marked verified, inferred, or user-provided — is matched against every requirement, gaps are either planned as a focused project or left visible, and the tailored resume edits content inside the candidate's own LaTeX/DOCX/PDF template byte-for-byte rather than reformatting it. A quality gate blocks export on unverified claims, keyword stuffing, or broken layout, and the finished application is filled in a browser you can watch, with nothing submitted until you confirm it.",
+    tech: ["Python", "LLM Integration", "PyMuPDF", "LaTeX", "Browser Automation", "GitHub API"],
+    categories: ["AI & Intelligent Systems", "Cloud & GenAI"],
+    roles: ["sde", "genai", "ai-ml"],
+    github: `${GH}/careerpilot`,
+    featured: true,
+    year: 2026,
+  },
+  {
+    id: "commitmentos",
+    emoji: "⏰",
+    title: "CommitmentOS",
+    repo: "commitmentos",
+    tagline: "Turns commitments hidden in email into tracked obligations",
+    description:
+      "Detects actionable promises and deadlines buried in everyday email and turns them into structured, trackable commitments. An LLM is used only to propose structured fields and a verbatim supporting quote from the source text — every consequential step after that (grounding the extraction, resolving a deadline phrase into a timestamp, state transitions, escalation, reminder scheduling, the audit trail) runs as ordinary, tested application code that never trusts the model's output directly. Ships a full state machine from detected through overdue and escalated to completed, a 24h/6h/overdue/escalated reminder ladder, and human approval gates on anything with an external effect, like a follow-up email.",
+    tech: ["Python", "n8n", "PostgreSQL", "LLM Extraction", "SMTP", "Telegram API"],
+    categories: ["AI & Intelligent Systems", "Backend & APIs"],
+    roles: ["sde", "genai", "backend"],
+    demo: "https://commitmentos.vercel.app",
+    github: `${GH}/commitmentos`,
+    featured: true,
+    year: 2026,
+  },
+  {
+    id: "resolve-issue-platform",
+    emoji: "🧩",
+    title: "Resolve — Issue Resolution Platform",
+    repo: "resolve-issue-platform",
+    tagline: "AI suggests the triage, a deterministic engine decides",
+    description:
+      "An issue-intake platform built around one architectural rule: AI suggests, the backend decides. Every submitted issue gets an AI-generated category, priority, and summary suggestion, but a separate deterministic RoutingService — never the model directly — makes the actual routing, priority, and SLA call. Issue classification runs asynchronously as a background task after the issue is already committed to Postgres, so intake never blocks on the model, and the original submitter tracks the full status lifecycle through to resolution.",
+    tech: ["React", "TypeScript", "Vite", "FastAPI", "PostgreSQL", "SQLAlchemy", "Pydantic", "Docker"],
+    categories: ["AI & Intelligent Systems", "Full-Stack Engineering"],
+    roles: ["sde", "genai", "fullstack"],
+    demo: "https://resolve-issue-platform.vercel.app",
+    github: `${GH}/resolve-issue-platform`,
+    featured: true,
+    year: 2026,
+  },
+  {
     id: "clinicalnote",
     emoji: "🩺",
     title: "ClinicalNote",
