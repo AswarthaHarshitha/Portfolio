@@ -2,9 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Code2, Globe, Mail, User } from "lucide-react";
 import { profile } from "../data/profile";
-import { projects } from "../data/projects";
-import { publications } from "../data/publications";
-import { certifications } from "../data/certifications";
 import { useScramble } from "../lib/useScramble";
 import { withBase } from "../lib/utils";
 
@@ -99,18 +96,9 @@ export default function IntroSplash({ onFinish }: { onFinish: () => void }) {
   }, []);
 
   const email = profile.links.email;
-  // ~180 words — around a minute at the utterance's speaking rate. Opens with
-  // "Welcome to my portfolio" per spec, then pitches like a recruiter would
-  // want to hear it: concrete skills, shipped work, real metrics, and a CTA.
-  // Every fact here is real, pulled straight from the same data the rest of
-  // the site uses — nothing invented for the sake of the pitch.
-  const summary = [
-    `Welcome to my portfolio. I'm ${profile.name}, a ${profile.title}.`,
-    `I ship production-style software end to end: AI agents that call real tools and APIs, full-stack applications with React, TypeScript, and Node.js, enterprise systems with role-based access control, and data platforms that turn raw numbers into decisions.`,
-    `Recent work includes a HIPAA-minded clinical documentation tool, a Gemini-powered Google Workspace assistant, an SAP Fiori work-order management system, and a hundred and eight thousand row enterprise analytics pipeline — all built with a focus on real correctness over demo polish: honest data, real authentication, and no fabricated output.`,
-    `I've shipped over ${projects.length} projects across full-stack engineering, generative AI, computer vision, data analytics, and SAP enterprise applications. I've published ${publications.length} piece${publications.length === 1 ? "" : "s"} of research with IEEE on applying machine learning to personalized health, and I hold ${certifications.length} certifications from SAP, Amazon Web Services, Oracle, and NPTEL, IIT Madras.`,
-    `I'm based in ${profile.location} and available for freelance and full-time roles. Take a look through my projects, publications, and certifications below, or reach out directly — I'd love to talk.`,
-  ].join(" ");
+  // Just the greeting — nothing more. A short line is also far more reliable
+  // across browsers than the earlier ~1-minute pitch was.
+  const summary = "Welcome to my portfolio.";
 
   const portfolioScramble = useScramble(PORTFOLIO_WORD, step === "portfolio" && !reduced);
   const nameScramble = useScramble(profile.name.toUpperCase(), step === "name" && !reduced, { stepMs: 40 });
